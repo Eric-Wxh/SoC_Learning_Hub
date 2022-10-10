@@ -70,25 +70,7 @@ AW Channel 中，主要关注 `AWVALID` 信号的控制。
 
 首先展示与 AW Channel 相关的各个信号之间的时序关系：
 
-```wavedrom
-{signal: [
-    {name: "ACLK",      wave: "p..........|...."},
-    {},
-    ['AW Channel',
-        {name: "awcmd",     wave: "x3.x.4.x.5.|...x", data: ["#1","#2","#3"]},
-        {name: "AWVALID",   wave: "01.0.1.0.1.|...0"},
-        {name: "AWREADY",   wave: "0.10..10...|..10"},
-    ],
-    {},
-    {name: "cmd_cnt",   wave: "2..2...2...|.2.2", data: ["0","1","2","1","2"]},
-    {name: "hand_aw",   wave: "0......1...|.0.1"},
-    {},
-    ['B Channel',
-        {name: "BVALID",    wave: "0..........|10.."},
-        {name: "BREADY",    wave: "1..........|...."}
-    ],
-]}
-```
+![AXI4 AWREADY](./pic/axi4_aw_handshake.svg "axi4_aw_handshake")
 
 其中，`awcmd` 包含了地址信号和控制信号。握手方式参考的资料如下：
 
@@ -155,31 +137,7 @@ W Channel 需要关注的点如下：
 
 AXI4 接口和 SRAM 写数据接口之间的时序转换关系如下：
 
-```wavedrom
-{signal: [
-    {name: "ACLK",      wave: "p...|....|...."},
-    {},
-    ['AW Channel',
-        {name: "AWADDR",    wave: "x3.x|....|....", data:["A0"]},
-        {name: "AWVALID",   wave: "01.0|....|...."},
-        {name: "AWREADY",   wave: "0.10|....|...."},
-    ],
-    {},
-    ['W Channel',
-        {name: "WVALID",    wave: "0...|1.0.|1.0."},
-        {name: "WREADY",    wave: "0...|.10.|.10."},
-        {name: "WDATA",     wave: "x...|3.x.|4.x.", data:["D(A0)","D(A1)"]},
-        {name: "WSTRB",     wave: "x...|3.x.|4.x.", data:["0xf", "0xf"]},
-        {name: "WLAST",     wave: "0...|....|1.0."},
-    ],
-    {},
-    ['SRAM_WR',
-        {name: "ADDRA",     wave: "x..3|..4.|..5.", data:["A0","A1","A2"]},
-        {name: "WEA",       wave: "x...|.3x.|.4x.", data:["0xf","0xf"]},
-        {name: "DINA",      wave: "x...|.3.x|.4.x", data:["D(A0)","D(A1)"]}
-    ],
-]}
-```
+![AXI4 Write Timing](./pic/axi4_w_sram.svg "axi4_w_sram")
 
 存储器接口写操作的逻辑为：
 1. AW Channel 握手成功时，载入 `AWADDR` 的值到 `addra`；W Channel握手成功时，**`addra` 根据 write transaction 的属性进行自递增**，具体的递增方式详见2.2.2；
@@ -308,25 +266,7 @@ AXI4 接口和 SRAM 写数据接口之间的时序转换关系如下：
 
 B Channel 的时序图如下：
 
-```wavedrom
-{signal: [
-    {name: "ACLK",      wave: "p...."},
-    {},
-    ['W Channel',
-        {name: "WDATA",     wave: "x3.x.", data:["D(An)"]},
-        {name: "WSTRB",     wave: "x3.x.", data:["0xf"]},
-        {name: "WVALID",    wave: "01.0."},
-        {name: "WREADY",    wave: "0.10."},
-        {name: "WLAST",     wave: "01.0."},
-    ],
-    {},
-    ['B Channel',
-        {name: "BREADY",    wave: "x..1x"},
-        {name: "BVALID",    wave: "0..10"},
-        {name: "BRESP",     wave: "x..3x", data:["R"]}
-    ],
-]}
-```
+![AXI4 BVALID](./pic/axi4_b_handshake.svg "axi4_b_handshake")
 
 `BVALID`的逻辑如下：
 1. 当 `WVALID`, `WREADY`, `WLAST` 均为高电平时，**transaction 的所有数据传输完成**，`BVALID` 拉高；
@@ -366,32 +306,7 @@ R Channel 的读地址递增方式与 W Channel 的写地址递增方式一致�
 
 R Channel 的 AXI4 to SRAM 读时序转换如下：
 
-```wavedrom
-{signal: [
-    {name: "ACLK",      wave: "p..............."},
-    {},
-    ['AR Channel',
-        {name: "ARADDR",    wave: "x3.x............", data:["A0"]},
-        {name: "ARVALID",   wave: "01.0............"},
-        {name: "ARREADY",   wave: "0.10............"},
-    ],
-    {},
-    ['R Channel',
-        {name: "RVALID",    wave: "0...101.01.01.0."},
-        {name: "RREADY",    wave: "1....0.10.10.10."},
-        {name: "RDATA",     wave: "x...3.4..5..6..x", data:["D(A0)","D(A1)","D  (A2)","D(A3)"]},
-        {name: "RLAST",     wave: "0...........1.0."},
-    ],
-    {},
-    {name: "awlen_cnt", wave: "2....2..2..2..2.", data:["0","1","2","3","0"]},
-    {},
-    ['SRAM_RD',
-    {name: "ADDRB",     wave: "x..3.4..5..6..x.", data:["A0","A1","A2","A3"]},
-    {name: "ENB",       wave: "0..1..........0."},
-    {name: "DOUTB",     wave: "x...3.4..5..6..x", data:["D(A0)","D(A1)","D(A2)","D(A3)"]}
-    ]
-]}
-```
+![AXI4 Read Timing](./pic/axi4_r_sram.svg "axi4_r_sram")
 
 其中，`RVALID` 由 `ENB` 和 `RREADY` 共同控制。
 
@@ -518,3 +433,7 @@ No_15 beat chk successful,the value is 15
 > 1. IHI0022E *AMBA AXI and ACE Protocol Specification*
 > 2. PG267 *AXI Verification IP v1.1 LogiCORE IP Product Guide*
 > 3. [AXI4协议解析](https://mp.weixin.qq.com/s/b87ZkPyX68vYoiMXLjjB9g)
+
+---
+
+[Back](../../../README.md)
